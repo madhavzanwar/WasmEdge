@@ -11,6 +11,7 @@ namespace WasiCrypto {
 namespace Symmetric {
 
 WasiCryptoExpect<void> Tag::verify(Span<const uint8_t> RawTag) const noexcept {
+  ensureOrReturn(RawTag.size() == Data.size(), __WASI_CRYPTO_ERRNO_INVALID_TAG);
   ensureOrReturn(!CRYPTO_memcmp(RawTag.data(), Data.data(), RawTag.size()),
                  __WASI_CRYPTO_ERRNO_INVALID_TAG);
 

@@ -47,6 +47,15 @@ TEST_F(WasiCryptoTest, Mac) {
                                  symmetricStateSqueezeTag(StateHandle));
 
       WASI_CRYPTO_EXPECT_TRUE(symmetricTagVerify(NewTagHandle, Tag));
+      std::vector<uint8_t> ShortTag(Tag.begin(), Tag.end() - 1);
+      std::vector<uint8_t> LongTag(Tag);
+      LongTag.push_back(0);
+      WASI_CRYPTO_EXPECT_FAILURE(symmetricTagVerify(NewTagHandle, {}),
+                                 __WASI_CRYPTO_ERRNO_INVALID_TAG);
+      WASI_CRYPTO_EXPECT_FAILURE(symmetricTagVerify(NewTagHandle, ShortTag),
+                                 __WASI_CRYPTO_ERRNO_INVALID_TAG);
+      WASI_CRYPTO_EXPECT_FAILURE(symmetricTagVerify(NewTagHandle, LongTag),
+                                 __WASI_CRYPTO_ERRNO_INVALID_TAG);
       WASI_CRYPTO_EXPECT_TRUE(symmetricTagClose(NewTagHandle));
 
       // Error case checking.

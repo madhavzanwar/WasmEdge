@@ -72,6 +72,29 @@ TEST_F(WasiCryptoTest, Aeads) {
     std::vector<uint8_t> Msg3(Msg.size());
     symmetricStateDecryptDetached(State4Handle, Msg3, Ciphertext, Tag);
     EXPECT_EQ("test"_u8, Msg3);
+
+    std::vector<uint8_t> ShortTag(Tag.begin(), Tag.end() - 1);
+    std::vector<uint8_t> LongTag(Tag);
+    LongTag.push_back(0);
+    for (auto *BadTag : {&ShortTag, &LongTag}) {
+      WASI_CRYPTO_EXPECT_SUCCESS(
+          BadStateHandle, symmetricStateOpen(Name, KeyHandle, OptionsHandle));
+      std::vector<uint8_t> BadMsg(Msg.size());
+      WASI_CRYPTO_EXPECT_FAILURE(
+          symmetricStateDecryptDetached(BadStateHandle, BadMsg, Ciphertext,
+                                        *BadTag),
+          __WASI_CRYPTO_ERRNO_INVALID_TAG);
+      WASI_CRYPTO_EXPECT_TRUE(symmetricStateClose(BadStateHandle));
+    }
+    WASI_CRYPTO_EXPECT_SUCCESS(
+        EmptyTagStateHandle,
+        symmetricStateOpen(Name, KeyHandle, OptionsHandle));
+    std::vector<uint8_t> EmptyTagMsg(Msg.size());
+    WASI_CRYPTO_EXPECT_FAILURE(
+        symmetricStateDecryptDetached(EmptyTagStateHandle, EmptyTagMsg,
+                                      Ciphertext, {}),
+        __WASI_CRYPTO_ERRNO_INVALID_TAG);
+    WASI_CRYPTO_EXPECT_TRUE(symmetricStateClose(EmptyTagStateHandle));
     WASI_CRYPTO_EXPECT_TRUE(optionsClose(OptionsHandle));
 
     {

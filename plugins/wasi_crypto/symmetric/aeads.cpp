@@ -181,6 +181,8 @@ WasiCryptoExpect<size_t>
 Cipher<CipherNid>::State::decryptImpl(Span<uint8_t> Out,
                                       Span<const uint8_t> Data,
                                       Span<const uint8_t> RawTag) noexcept {
+  ensureOrReturn(RawTag.size() == getTagSize(),
+                 __WASI_CRYPTO_ERRNO_INVALID_TAG);
   ensureOrReturn(Data.size() <=
                      static_cast<size_t>(std::numeric_limits<int>::max()),
                  __WASI_CRYPTO_ERRNO_ALGORITHM_FAILURE);
