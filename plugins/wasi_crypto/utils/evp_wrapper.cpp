@@ -137,14 +137,19 @@ ECDSA_SIG *o2iEcdsaSig(Span<const uint8_t> Encoded) {
   return Sig.release();
 }
 
-WasiCryptoExpect<std::vector<uint8_t>> i2oEcdsaSig(ECDSA_SIG *Sig) {
+WasiCryptoExpect<std::vector<uint8_t>> i2oEcdsaSig(ECDSA_SIG *Sig,
+                                                   size_t RawSize) {
   auto *R = ECDSA_SIG_get0_r(Sig);
   auto *S = ECDSA_SIG_get0_s(Sig);
-  auto RSize = static_cast<size_t>(BN_num_bytes(R));
-  auto SSize = static_cast<size_t>(BN_num_bytes(S));
-  std::vector<uint8_t> Res(RSize + SSize);
-  opensslCheck(BN_bn2bin(R, Res.data()));
-  opensslCheck(BN_bn2bin(S, Res.data() + RSize));
+  const size_t HalfSize = RawSize / 2;
+  std::vector<uint8_t> Res(RawSize);
+  ensureOrReturn(BN_bn2binpad(R, Res.data(), static_cast<int>(HalfSize)) ==
+                     static_cast<int>(HalfSize),
+                 __WASI_CRYPTO_ERRNO_ALGORITHM_FAILURE);
+  ensureOrReturn(
+      BN_bn2binpad(S, Res.data() + HalfSize, static_cast<int>(HalfSize)) ==
+          static_cast<int>(HalfSize),
+      __WASI_CRYPTO_ERRNO_ALGORITHM_FAILURE);
 
   return Res;
 }

@@ -11,7 +11,9 @@ namespace WasiCrypto {
 namespace Signatures {
 
 namespace {
-inline const size_t RawSigSize = 64;
+template <int CurveNid> constexpr size_t rawSigSize() noexcept {
+  return CurveNid == NID_secp384r1 ? 96 : 64;
+}
 } // namespace
 
 template <int CurveNid>
@@ -40,7 +42,7 @@ Ecdsa<CurveNid>::Signature::import(
     __wasi_signature_encoding_e_t Encoding) noexcept {
   switch (Encoding) {
   case __WASI_SIGNATURE_ENCODING_RAW: {
-    ensureOrReturn(Encoded.size() == RawSigSize,
+    ensureOrReturn(Encoded.size() == rawSigSize<CurveNid>(),
                    __WASI_CRYPTO_ERRNO_INVALID_SIGNATURE);
     EcdsaSigPtr Sig{o2iEcdsaSig(Encoded)};
     ensureOrReturn(Sig, __WASI_CRYPTO_ERRNO_INVALID_SIGNATURE);
@@ -61,7 +63,7 @@ WasiCryptoExpect<std::vector<uint8_t>> Ecdsa<CurveNid>::Signature::exportData(
   case __WASI_SIGNATURE_ENCODING_RAW: {
     EcdsaSigPtr Sig{d2iEcdsaSig(Data)};
     ensureOrReturn(Sig, __WASI_CRYPTO_ERRNO_ALGORITHM_FAILURE);
-    return i2oEcdsaSig(Sig.get());
+    return i2oEcdsaSig(Sig.get(), rawSigSize<CurveNid>());
   }
   case __WASI_SIGNATURE_ENCODING_DER: {
     return Data;

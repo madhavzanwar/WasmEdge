@@ -116,8 +116,10 @@ WasiCryptoExpect<std::vector<uint8_t>> i2dEcdsaSig(ECDSA_SIG *Sig);
 // Transform raw represent ecdsa ( r | s) to ECDSA_SIG. Need to check `nullptr`.
 ECDSA_SIG *o2iEcdsaSig(Span<const uint8_t> Encoded);
 
-// Transform ECDSA_SIG to raw representation (r | s).
-WasiCryptoExpect<std::vector<uint8_t>> i2oEcdsaSig(ECDSA_SIG *Sig);
+// Transform ECDSA_SIG to raw representation (r | s), where r and s are
+// zero-padded to half of `RawSize` bytes each.
+WasiCryptoExpect<std::vector<uint8_t>> i2oEcdsaSig(ECDSA_SIG *Sig,
+                                                   size_t RawSize);
 
 // This is a wrapper for EVP_PKEY. Since EVP_PKEY internally uses locks to
 // guarantee thread-safe `EVP_PKEY_up_ref` (you will find them in
