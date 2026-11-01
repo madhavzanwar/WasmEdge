@@ -785,6 +785,45 @@ TEST(InstructionTest, LoadMemoryInstruction) {
   EXPECT_FALSE(LdrMultiMem.parseModule(prefixedVec(Vec)));
 }
 
+TEST(InstructionTest, LoadArrayDataInstructionNeedsDataCount) {
+  auto ArrayDataBody = [](uint8_t SubOpCode) {
+    return std::vector<uint8_t>{
+        0x0AU,                          // Code section
+        0x0DU,                          // Content size = 13
+        0x01U,                          // Vector length = 1
+        0x0BU,                          // Code segment size = 11
+        0x00U,                          // Local vec(0)
+        0x41U, 0x00U,                   // OpCode I32__const 0.
+        0x41U, 0x00U,                   // OpCode I32__const 0.
+        0xFBU, SubOpCode, 0x00U, 0x00U, // Array data instruction.
+        0x1AU,                          // OpCode Drop.
+        0x0BU                           // OpCode End.
+    };
+  };
+  const std::vector<uint8_t> DataCountSec = {
+      0x0CU, // Datacount section
+      0x01U, // Content size = 1
+      0x00U  // Content, no data segments
+  };
+
+  // Array data instructions use a data index, so the data count section is
+  // required.
+  //
+  //   1.  Load array.new_data without the data count section.
+  //   2.  Load array.new_data with the data count section.
+  //   3.  Load array.init_data without the data count section.
+  //   4.  Load array.init_data with the data count section.
+
+  for (uint8_t SubOpCode : {0x09U, 0x12U}) {
+    auto Body = ArrayDataBody(SubOpCode);
+    EXPECT_FALSE(Ldr.parseModule(prefixedVec(Body)));
+
+    std::vector<uint8_t> WithDataCount = DataCountSec;
+    WithDataCount.insert(WithDataCount.end(), Body.begin(), Body.end());
+    EXPECT_TRUE(Ldr.parseModule(prefixedVec(WithDataCount)));
+  }
+}
+
 TEST(InstructionTest, LoadConstInstruction) {
   std::vector<uint8_t> Vec;
 

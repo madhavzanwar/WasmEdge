@@ -274,6 +274,15 @@ Expect<void> Loader::loadSegment(AST::CodeSegment &CodeSeg) {
           spdlog::error(ErrInfo::InfoAST(ASTNodeAttr::Seg_Code));
           return E;
         }));
+    if (!HasDataSection) {
+      for (const auto &Instr : CodeSeg.getExpr().getInstrs()) {
+        if (Instr.getOpCode() == OpCode::Array__new_data ||
+            Instr.getOpCode() == OpCode::Array__init_data) {
+          return logLoadError(ErrCode::Value::DataCountRequired,
+                              Instr.getOffset(), ASTNodeAttr::Instruction);
+        }
+      }
+    }
   }
 
   return {};
