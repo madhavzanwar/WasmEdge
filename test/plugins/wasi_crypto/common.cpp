@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: Copyright The WasmEdge Authors
 
+#include "common/array_output.h"
 #include "common/func.h"
 #include "helper.h"
 #include "utils/evp_wrapper.h"
+#include "utils/secret_vec.h"
 
 namespace {
 template <typename T, typename M>
@@ -258,6 +260,27 @@ TEST_F(WasiCryptoTest, ArrayOutputPullReportsCompletion) {
       __WASI_CRYPTO_ERRNO_INVALID_HANDLE);
 
   WASI_CRYPTO_EXPECT_TRUE(symmetricKeyClose(KeyHandle));
+}
+
+TEST_F(WasiCryptoTest, SecretVecMoveConstructor) {
+  std::vector<uint8_t> Src = {1, 2, 3, 4, 5};
+  const uint8_t *DataPtr = Src.data();
+  SecretVec Sec(std::move(Src));
+
+  EXPECT_EQ(Sec.size(), 5u);
+  EXPECT_EQ(Sec.data(), DataPtr);
+  EXPECT_TRUE(Src.empty());
+
+  std::vector<uint8_t> OutputSrc = {10, 20, 30};
+  Common::ArrayOutput Out(std::move(OutputSrc));
+  EXPECT_EQ(Out.len(), 3u);
+  EXPECT_TRUE(OutputSrc.empty());
+
+  std::vector<uint8_t> Pulled(3);
+  auto [BytesRead, AllPulled] = Out.pull(Pulled);
+  EXPECT_EQ(BytesRead, 3u);
+  EXPECT_TRUE(AllPulled);
+  EXPECT_EQ(Pulled, (std::vector<uint8_t>{10, 20, 30}));
 }
 
 } // namespace WasiCrypto
