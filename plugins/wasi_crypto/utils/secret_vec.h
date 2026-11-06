@@ -41,6 +41,8 @@ public:
   SecretVec(Span<const uint8_t> Data) noexcept
       : Data(Data.begin(), Data.end()) {}
 
+  SecretVec(std::vector<uint8_t> &&Data) noexcept : Data(std::move(Data)) {}
+
   SecretVec(size_t Size) noexcept : Data(Size) {}
 
   ~SecretVec() noexcept {
